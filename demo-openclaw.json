@@ -1,0 +1,30 @@
+{
+  "models": [
+    {
+      "name": "OpenAI GPT-4",
+      "api_key": "sk-xxx",
+      "endpoint": "https://api.openai.com/v1/chat/completions",
+      "alias": "gpt",
+      "default": true
+    },
+    {
+      "name": "智谱 GLM",
+      "api_key": "your_glm_key",
+      "endpoint": "https://open.bigmodel.cn/api/paas/v4/chat/completions",
+      "alias": "glm"
+    }
+  ],
+  "channels": [
+    {
+      "type": "wechat_work",
+      "webhook": "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=xxx",
+      "token": "xxx"
+    }
+  ],
+  "skills": ["code", "search", "file", "ocr", "crawl", "schedule"],
+  "settings": {
+    "log_level": "info",
+    "max_tokens": 4000,
+    "timeout": 30
+  }
+}
