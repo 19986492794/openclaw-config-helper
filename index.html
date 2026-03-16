@@ -123,12 +123,12 @@
     <div id="message" class="message"></div>
 
     <footer style="margin-top: 2rem; font-size: 0.875rem; color: #666;">
-        <p>此页面为静态文件，需在本机通过 <code>http://127.0.0.1:5000</code> 访问，配置文件位于 <code>~/.openclaw/openclaw.json</code>。</p>
+        <p>此页面为静态文件，需在本机通过 <code>http://127.0.0.1:18799</code> 访问，配置文件位于 <code>~/.openclaw/openclaw.json</code>。</p>
         <p>如果页面无法保存，请确保已启动后端（<code>python3 backend.py</code>）。</p>
     </footer>
 
     <script>
-        const API_BASE = 'http://127.0.0.1:5000/api';
+        const API_BASE = 'http://127.0.0.1:18799/api';
 
         function showMessage(text, isSuccess) {
             const el = document.getElementById('message');
@@ -170,7 +170,6 @@
                 const res = await fetch(`${API_BASE}/config`);
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
                 const config = await res.json();
-                // 简单填充（实际应遍历配置）
                 if (config.models && config.models.length > 0) {
                     const m = config.models[0];
                     document.getElementById('model-name').value = m.name || '';
@@ -279,7 +278,6 @@
             el.appendChild(div);
         }
 
-        // 启动时检查 API 状态
         checkApiStatus();
     </script>
 </body>

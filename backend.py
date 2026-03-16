@@ -98,8 +98,9 @@ def system_info():
     })
 
 if __name__ == '__main__':
+    PORT = 18799
     print("🚀 OpenClaw 配置后端启动")
     print(f"📁 配置文件路径: {CONFIG_PATH}")
-    print("🌐 访问 http://127.0.0.1:5000")
+    print(f"🌐 访问 http://127.0.0.1:{PORT}")
     print("📌 按 Ctrl+C 退出")
-    app.run(host='127.0.0.1', port=5000, debug=False)
+    app.run(host='127.0.0.1', port=PORT, debug=False)

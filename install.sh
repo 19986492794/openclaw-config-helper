@@ -20,57 +20,37 @@ fi
 TARGET_DIR="$HOME/.openclaw/config-web"
 mkdir -p "$TARGET_DIR"
 
+echo "📥 下载文件..."
 curl -s -o "$TARGET_DIR/index.html" \
-    "https://raw.githubusercontent.com/YOUR_GITHUB_USER/openclaw-config/main/index.html"
+    "https://raw.githubusercontent.com/19986492794/openclaw-config-helper/main/index.html"
+curl -s -o "$TARGET_DIR/backend.py" \
+    "https://raw.githubusercontent.com/19986492794/openclaw-config-helper/main/backend.py"
+curl -s -o "$TARGET_DIR/requirements.txt" \
+    "https://raw.githubusercontent.com/19986492794/openclaw-config-helper/main/requirements.txt"
 
 if [ $? -ne 0 ]; then
-    echo "⚠️  下载失败，使用本地备份页面。"
-    # 如果下载失败，写入一个静态页面（可替换为上面写的 openclaw-config.html）
-    cat > "$TARGET_DIR/index.html" << 'EOF'
-<!DOCTYPE html>
-<html><head><title>OpenClaw Config</title></head><body>
-<h1>配置页面</h1>
-<p>请确保在 GitHub 发布页面内容。</p>
-</body></html>
-EOF
+    echo "⚠️  下载失败，请检查网络或 GitHub 可访问性。"
+    exit 1
 fi
 
-# 可选：写一个简易服务器脚本
-cat > "$TARGET_DIR/server.py" << 'EOF'
-#!/usr/bin/env python3
-import http.server
-import socketserver
-import os
-
-PORT = 8080
-DIR = os.path.dirname(os.path.abspath(__file__))
-
-class ConfigHandler(http.server.SimpleHTTPRequestHandler):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, directory=DIR, **kwargs)
-
-with socketserver.TCPServer(("", PORT), ConfigHandler) as httpd:
-    print(f"🦞 OpenClaw 配置助手运行在 http://127.0.0.1:{PORT}")
-    print("按 Ctrl+C 退出")
-    httpd.serve_forever()
-EOF
-
-chmod +x "$TARGET_DIR/server.py"
-
-# 启动服务器的选项
-if [ "$1" = "--serve" ]; then
-    cd "$TARGET_DIR"
-    python3 server.py
-else
-    echo ""
-    echo "✅ 页面已安装到 $TARGET_DIR"
-    echo ""
-    echo "🧪 启动配置助手："
-    echo "    cd $TARGET_DIR"
-    echo "    python3 server.py"
-    echo ""
-    echo "🌐 然后在浏览器访问："
-    echo "    http://127.0.0.1:8080"
-    echo ""
-    echo "📋 如需开机自启，可添加到 crontab 或 systemd。"
+# 安装 Python 依赖
+if [ -f "$TARGET_DIR/requirements.txt" ]; then
+    echo "🔧 安装 Python 依赖..."
+    pip3 install -r "$TARGET_DIR/requirements.txt" 2>/dev/null || \
+    pip install -r "$TARGET_DIR/requirements.txt" 2>/dev/null || \
+    echo "⚠️  依赖安装失败，请手动执行：pip install -r $TARGET_DIR/requirements.txt"
 fi
+
+echo ""
+echo "✅ 安装完成！"
+echo ""
+echo "🧪 启动配置助手："
+echo "    cd $TARGET_DIR"
+echo "    python3 backend.py"
+echo ""
+echo "🌐 然后在浏览器访问："
+echo "    http://127.0.0.1:18799"
+echo ""
+echo "📌 按 Ctrl+C 停止服务。"
+echo ""
+echo "💡 如需开机自启，可添加到 crontab 或 systemd。"
