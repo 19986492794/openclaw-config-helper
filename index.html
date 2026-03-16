@@ -9,20 +9,25 @@
         body { padding: 1rem; max-width: 900px; margin: 0 auto; }
         .module { margin-bottom: 2rem; padding: 1rem; border: 1px solid #ddd; border-radius: 8px; }
         .module h3::before { content: "📦 "; }
-        .controls { margin-top: 2rem; display: flex; gap: 1rem; }
+        .controls { margin-top: 2rem; display: flex; gap: 1rem; flex-wrap: wrap; }
         .btn { padding: 0.75rem 1.5rem; font-size: 1rem; }
         .field { margin-bottom: 1rem; }
         .field label { display: block; margin-bottom: 0.5rem; font-weight: bold; }
         .field input, .field textarea, .field select { width: 100%; box-sizing: border-box; }
-        .message { display: none; margin-top: 1rem; padding: 0.75rem; border-radius: 5px; }
+        .message { margin-top: 1rem; padding: 0.75rem; border-radius: 5px; display: none; }
         .message.success { background: #d1fae5; border: 1px solid #34d399; }
         .message.error { background: #fee2e2; border: 1px solid #f87171; }
+        .spinner { display: none; margin-left: 1rem; vertical-align: middle; }
+        .api-status { font-size: 0.875rem; color: #666; margin-bottom: 1rem; }
+        .api-status.online { color: #10b981; }
+        .api-status.offline { color: #ef4444; }
     </style>
 </head>
 <body>
     <header>
         <h1>🦞 OpenClaw 配置助手</h1>
         <p>在本地编辑 openclaw.json 配置文件，保存后自动更新。</p>
+        <div class="api-status" id="apiStatus">API 状态: <span>检测中...</span></div>
     </header>
 
     <div class="module">
@@ -107,40 +112,92 @@
     </div>
 
     <div class="controls">
-        <button class="btn" onclick="loadConfig()">从本地加载配置</button>
-        <button class="btn primary" onclick="saveConfig()">保存到 openclaw.json</button>
+        <button class="btn" onclick="loadConfig()" id="loadBtn">从本地加载配置</button>
+        <button class="btn primary" onclick="saveConfig()" id="saveBtn">保存到 openclaw.json</button>
         <button class="btn" onclick="testConfig()">测试连接</button>
+        <button class="btn" onclick="showBackup()">查看备份</button>
+        <button class="btn" onclick="restoreBackup()">恢复备份</button>
+        <span class="spinner" id="spinner">⏳</span>
     </div>
 
     <div id="message" class="message"></div>
 
     <footer style="margin-top: 2rem; font-size: 0.875rem; color: #666;">
-        <p>此页面为静态文件，需在本机通过 <code>http://127.0.0.1:8000</code> 访问，配置文件位于 <code>~/.openclaw/openclaw.json</code>。</p>
+        <p>此页面为静态文件，需在本机通过 <code>http://127.0.0.1:5000</code> 访问，配置文件位于 <code>~/.openclaw/openclaw.json</code>。</p>
+        <p>如果页面无法保存，请确保已启动后端（<code>python3 backend.py</code>）。</p>
     </footer>
 
     <script>
-        const CONFIG_PATH = '/.openclaw/openclaw.json';
+        const API_BASE = 'http://127.0.0.1:5000/api';
 
         function showMessage(text, isSuccess) {
             const el = document.getElementById('message');
             el.textContent = text;
             el.className = isSuccess ? 'message success' : 'message error';
             el.style.display = 'block';
+            setTimeout(() => el.style.display = 'none', 5000);
         }
 
-        async function loadConfig() {
-            try {
-                const res = await fetch(CONFIG_PATH);
-                if (!res.ok) throw new Error('未找到配置文件');
-                const config = await res.json();
-                // 这里可以解析 config 并填充表单（简化示例略）
-                showMessage('已从本地加载配置', true);
-            } catch (e) {
-                showMessage('无法加载配置: ' + e.message, false);
+        function setLoading(btnId, isLoading) {
+            const spinner = document.getElementById('spinner');
+            const btn = document.getElementById(btnId);
+            if (isLoading) {
+                btn.disabled = true;
+                spinner.style.display = 'inline-block';
+            } else {
+                btn.disabled = false;
+                spinner.style.display = 'none';
             }
         }
 
+        async function checkApiStatus() {
+            const statusEl = document.getElementById('apiStatus');
+            try {
+                const res = await fetch(`${API_BASE}/config`);
+                if (res.ok) {
+                    statusEl.innerHTML = 'API 状态: <span class="online">在线</span>';
+                } else {
+                    statusEl.innerHTML = 'API 状态: <span class="offline">离线</span>';
+                }
+            } catch {
+                statusEl.innerHTML = 'API 状态: <span class="offline">离线</span>';
+            }
+        }
+
+        async function loadConfig() {
+            setLoading('loadBtn', true);
+            try {
+                const res = await fetch(`${API_BASE}/config`);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const config = await res.json();
+                // 简单填充（实际应遍历配置）
+                if (config.models && config.models.length > 0) {
+                    const m = config.models[0];
+                    document.getElementById('model-name').value = m.name || '';
+                    document.getElementById('model-api-key').value = m.api_key || '';
+                    document.getElementById('model-endpoint').value = m.endpoint || '';
+                    document.getElementById('model-alias').value = m.alias || '';
+                }
+                if (config.channels && config.channels.length > 0) {
+                    const c = config.channels[0];
+                    document.getElementById('channel-type').value = c.type || 'wechat_work';
+                    document.getElementById('channel-webhook').value = c.webhook || '';
+                    document.getElementById('channel-token').value = c.token || '';
+                }
+                if (config.skills) {
+                    document.querySelectorAll('input[name="skill"]').forEach(cb => {
+                        cb.checked = config.skills.includes(cb.value);
+                    });
+                }
+                showMessage('配置加载成功', true);
+            } catch (e) {
+                showMessage('无法加载配置: ' + e.message, false);
+            }
+            setLoading('loadBtn', false);
+        }
+
         async function saveConfig() {
+            setLoading('saveBtn', true);
             const config = {
                 models: [{
                     name: document.getElementById('model-name').value,
@@ -157,24 +214,54 @@
             };
 
             try {
-                const res = await fetch(CONFIG_PATH, {
+                const res = await fetch(`${API_BASE}/config`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(config, null, 2)
                 });
+                const result = await res.json();
                 if (res.ok) {
                     showMessage('配置已保存到 openclaw.json', true);
                 } else {
-                    showMessage('保存失败: ' + res.statusText, false);
+                    showMessage('保存失败: ' + (result.error || res.statusText), false);
                 }
             } catch (e) {
                 showMessage('保存出错: ' + e.message, false);
             }
+            setLoading('saveBtn', false);
         }
 
-        function testConfig() {
-            // 简单测试可用性
-            showMessage('测试功能待实现（需后端支持）', true);
+        async function testConfig() {
+            showMessage('测试功能需后端实现（TODO）', true);
+        }
+
+        async function showBackup() {
+            try {
+                const res = await fetch(`${API_BASE}/backup`);
+                const data = await res.json();
+                if (data.backup) {
+                    showMessage('备份文件存在（可恢复）', true);
+                } else {
+                    showMessage('暂无备份文件', true);
+                }
+            } catch {
+                showMessage('无法检查备份', false);
+            }
+        }
+
+        async function restoreBackup() {
+            if (!confirm('确定要恢复备份吗？当前配置将被覆盖。')) return;
+            try {
+                const res = await fetch(`${API_BASE}/restore`, { method: 'POST' });
+                const result = await res.json();
+                if (res.ok) {
+                    showMessage('已从备份恢复配置', true);
+                } else {
+                    showMessage('恢复失败: ' + result.error, false);
+                }
+            } catch (e) {
+                showMessage('恢复出错: ' + e.message, false);
+            }
         }
 
         function addModel() {
@@ -187,11 +274,13 @@
                 <input type="text" placeholder="API Key">
                 <input type="text" placeholder="端点">
                 <input type="text" placeholder="别名">
+                <button onclick="this.parentElement.remove()">删除</button>
             `;
             el.appendChild(div);
         }
 
-        loadConfig();
+        // 启动时检查 API 状态
+        checkApiStatus();
     </script>
 </body>
 </html>
