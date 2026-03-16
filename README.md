@@ -10,7 +10,7 @@
 > 
 > 请执行以下命令安装 OpenClaw 配置助手：
 > ```bash
-> curl -s https://raw.githubusercontent.com/19986492794/openclaw-config-helper/main/install.sh | bash
+> curl -s https://raw.githubusercontent.com/jasperliu2026ai/openclaw-config-helper/main/install.sh | bash
 > ```
 > 然后启动服务，端口为 `18799`。
 
@@ -21,7 +21,7 @@
 ### 1. 安装
 ```bash
 # 一键安装脚本（需具备 curl 和 bash）
-curl -s https://raw.githubusercontent.com/19986492794/openclaw-config-helper/main/install.sh | bash
+curl -s https://raw.githubusercontent.com/jasperliu2026ai/openclaw-config-helper/main/install.sh | bash
 ```
 
 安装脚本会：
